@@ -10,5 +10,10 @@ Authors@R: c(person("Carl", "Boettiger", role = c("aut", "cre"), email =
     person("Karthik", "Ram", role = "aut"))
 URL: https://github.com/ropensci/rgpdd
 BugReports: https://github.com/ropensci/rgpdd/issues
-Collate:
-    ''
+Suggests: testthat,
+    knitr,
+    covr,
+    dplyr,
+    ggplot2
+VignetteBuilder: knitr
+LazyData: TRUE

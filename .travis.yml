@@ -1,0 +1,19 @@
+# Sample .travis.yml for R projects
+
+language: r
+warnings_are_errors: true
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+
+    r_binary_packages:
+    - testthat
+    - knitr
+    
+    r_github_packages:
+    - jimhester/covr
+    
+    after_success:
+    - Rscript -e 'library(covr); coveralls()'
