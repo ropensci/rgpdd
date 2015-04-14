@@ -59,7 +59,26 @@ fit_rw <- function(y, init = c(dt=mean(y), HHt = log(var(y))), ...){
   c(o, list(a0 = y[1], n = length(y)))
 }
 
-robust_fit <- function(model = c("ssg", "ssrw", "g", "rw"), y, N = 50, all = FALSE, ...){
+
+fit_dd <- function(y, 
+                   init = c(dt = mean(y), HHt = log(var(y)/2), GGt = log(var(y)/2)),
+                   ...){
+    
+    o <- optim(init,
+                 fn =  function(par, ...)
+                   -fkf(dt = matrix(par[1]), HHt = matrix(exp(par[2])), 
+                        GGt = matrix(exp(par[3])), ...)$logLik,
+                 Tt = matrix(0.8), a0 = y[1], P0 = matrix(10), 
+                 ct = matrix(0), Zt = matrix(1), yt = rbind(y), 
+                 check.input = FALSE, ...)
+  o$par[["HHt"]] <- exp(o$par[["HHt"]])
+  o$par[["GGt"]] <- exp(o$par[["GGt"]])
+  c(o, list(a0 = y[1], n = length(y)))
+   
+}
+
+
+robust_fit <- function(model = c("ssg", "ssrw", "g", "rw", "dd"), y, N = 50, all = FALSE, ...){
   
   ## Set the model and the mean initial condition
   m <- switch(model,
@@ -72,8 +91,10 @@ robust_fit <- function(model = c("ssg", "ssrw", "g", "rw"), y, N = 50, all = FAL
               g = list(fit = fit_g, 
                        init = c(dt = mean(y), Tt = 1, HHt = log(var(y)/2))),
               rw = list(fit = fit_rw, 
-                        init = c(dt = mean(y), HHt = log(var(y)/2))))  
-  
+                        init = c(dt = mean(y), HHt = log(var(y)/2))),
+              dd = list(fit = fit_dd, 
+                         init = c(dt = mean(y),
+                                 HHt = log(var(y)/2), GGt = log(var(y)/2))))
   
   ## Create the inital conditions
   inits <- data.frame(id = 1:N, sapply(m$init, 
