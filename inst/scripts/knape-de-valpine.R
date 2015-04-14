@@ -93,7 +93,7 @@ robust_fit <- function(model = c("ssg", "ssrw", "g", "rw"), y, N = 50, all = FAL
   inits %>% group_by(id) %>% do(f(.)) %>% ungroup() -> output
   
   if(!all) ## drop unconverged, and select only the best scoring run
-    output %>% filter(converge == 0) %>% slice(which.min(mloglik)) 
+    output %>% filter(converge == 0) %>% slice(which.min(mloglik)) -> output 
   
   output
 }
