@@ -77,8 +77,7 @@ fit_dd <- function(y,
    
 }
 
-
-robust_fit <- function(model = c("ssg", "ssrw", "g", "rw", "dd"), y, N = 50, all = FALSE, ...){
+robust_fit <- function(model, y, N = 50, all = FALSE, ...){
   
   ## Set the model and the mean initial condition
   m <- switch(model,
@@ -88,22 +87,23 @@ robust_fit <- function(model = c("ssg", "ssrw", "g", "rw", "dd"), y, N = 50, all
               ssrw = list(fit = fit_ssrw, 
                           init = c(dt = mean(y), HHt = log(var(y)/2), 
                                    GGt = log(var(y)/2))),
+              dd = list(fit = fit_dd, 
+                          init = c(dt = mean(y), HHt = log(var(y)/2), 
+                                   GGt = log(var(y)/2))),
               g = list(fit = fit_g, 
                        init = c(dt = mean(y), Tt = 1, HHt = log(var(y)/2))),
               rw = list(fit = fit_rw, 
-                        init = c(dt = mean(y), HHt = log(var(y)/2))),
-              dd = list(fit = fit_dd, 
-                         init = c(dt = mean(y),
-                                 HHt = log(var(y)/2), GGt = log(var(y)/2))))
+                        init = c(dt = mean(y), HHt = log(var(y)/2))))  
+  
   
   ## Create the inital conditions
-  inits <- data.frame(id = 1:N, sapply(m$init, 
-                      function(m) rnorm(N, m, sqrt(abs(m)))))  
+  inits <- data.frame(sapply(m$init, 
+                      function(m) rnorm(N, m, sqrt(abs(m)) ) ))
   
   ## Attempt the requested fit or return NAs
   f <- function(init){
     o <- tryCatch(
-      m$fit(y, init = init[-1]), 
+      m$fit(y, init = init), 
       error = function(e) list(par = c(dt = NA, Tt=NA, HHt = NA, GGt= NA),
                                value=NA, convergence=1, n=length(y), a0=y[1]))
     data.frame(t(c(o$par, mloglik = o$value, converge =
@@ -111,15 +111,15 @@ robust_fit <- function(model = c("ssg", "ssrw", "g", "rw", "dd"), y, N = 50, all
   }
   
   ## Apply the function to each initial condition, 
-  inits %>% group_by(id) %>% do(f(.)) %>% ungroup() -> output
+  inits %>% rowwise() %>% do(f(.)) -> output
   
   if(!all) ## drop unconverged, and select only the best scoring run
-    output %>% filter(converge == 0) %>% slice(which.min(mloglik)) -> output 
+    output %>% filter(converge == 0) %>% slice(which.min(mloglik)) -> output
   
   output
 }
 
-
+## Doesn't ever need to fit dd
 kalman <- function(df, ...){
   y <- df$logN
   ssg <- robust_fit("ssg", y, ...) 
@@ -127,10 +127,9 @@ kalman <- function(df, ...){
   g <- robust_fit("g", y, ...) 
   rw <- robust_fit("rw", y, ...)
   options(stringsAsFactors=FALSE)
-  rbind(ssg  = ssg,
-        ssrw = cbind(ssrw, Tt = 1),
-        g    = cbind(g, GGt = 0), 
-        rw   = cbind(rw, Tt = 1, GGt = 0))
+  rbind(data.frame(model ="ssg", gather(ssg, parameter, value)),
+        data.frame(model = "ssrw", gather(ssrw, parameter, value)),
+        data.frame(model = "g", gather(g, parameter, value)),
+        data.frame(model = "rw", gather(rw, parameter, value)))
                               
 }
-
