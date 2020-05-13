@@ -1,5 +1,6 @@
 Package: rgpdd
-Description: R Interface to the Global Population Dynamics Database
+Description: R Interface to the Global Population Dynamics Database 
+    (<https://ecologicaldata.org/wiki/global-population-dynamics-database>)
 Title: R Interface to the Global Population Dynamics Database
 Version: 0.1
 License: CC0
